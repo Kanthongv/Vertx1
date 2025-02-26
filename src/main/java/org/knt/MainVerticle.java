@@ -3,10 +3,11 @@ package org.knt;
 import java.util.Random;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.redis.client.Redis;
+import io.vertx.redis.client.RedisOptions;
 
 /**
  * This is the main verticle for the application.
- * It creates a HTTP server and listens on port 8080.
  * It also handles the deployment and undeployment of the verticle.
  */
 public class MainVerticle extends AbstractVerticle {
@@ -29,14 +30,10 @@ public class MainVerticle extends AbstractVerticle {
             req.response().end(response);
         }).listen(PORT);
         System.out.println("Server started on port " + PORT);
+
+        // Connect to Redis
+        connectToRedis();   
     }
-
-    // public void init() {
-    //     System.out.println("Initializing verticle");
-
-    //     // Deploy this instance as a verticle
-    //     io.vertx.core.Vertx.vertx().deployVerticle(this);
-    // }
 
     /**
      * Demonstrates the use of virtual threads by creating multiple
@@ -63,5 +60,20 @@ public class MainVerticle extends AbstractVerticle {
     @Override
     public void stop() {
         System.out.println("Stopping verticle");
+    }
+
+    private void connectToRedis() {
+        RedisOptions redisOptions = new RedisOptions()
+            .setConnectionString("redis://" + config().getString("redis.host", "localhost") + ":" + config().getInteger("redis.port", 6379))
+            .setMaxWaitingHandlers(config().getInteger("redis.maxWaitingHandlers", 32));
+
+        Redis redisClient = Redis.createClient(vertx, redisOptions);
+        redisClient.connect(ar -> {
+            if (ar.succeeded()) {
+                System.out.println("Connected to Redis");
+            } else {
+                System.out.println("Failed to connect to Redis: " + ar.cause().getMessage());
+            }
+        }); 
     }
 }
