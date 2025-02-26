@@ -1,0 +1,71 @@
+plugins {
+    id 'java'
+    id 'info.solidsoft.pitest' version '1.15.0'
+    id 'jacoco'
+}
+
+group = 'org.knt'
+version = '1.0-SNAPSHOT'
+
+ext {
+    vertxVersion = '4.5.13'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "io.vertx:vertx-core:${vertxVersion}"
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "io.vertx:vertx-junit5:${vertxVersion}"
+    testImplementation "io.vertx:vertx-web-client:${vertxVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+}
+
+// Configure PITest
+pitest {
+    junit5PluginVersion = '1.2.1'
+    targetClasses = ['org.knt.*']
+    targetTests = ['org.knt.*Test']
+    threads = 4
+    outputFormats = ['HTML']
+    timestampedReports = false
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }   
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+    reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'BUNDLE' // Nivel de validación (puede ser BUNDLE, PACKAGE, CLASS, METHOD)
+            excludes = ['org/knt/Starter.*']
+
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 0.95 // 1=100% de cobertura en ramas de decisión
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
